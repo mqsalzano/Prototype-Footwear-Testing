@@ -16,10 +16,10 @@ tmpFiles(ismember({tmpFiles.name},{'.','..'})) = [];
 tmpFiles(ismember({tmpFiles.name},'.DS_Store')) = [];
 
 %create structure or load previous structure
-if isfile('LoftTunedData.mat') == 1
-    load('LoftTunedData.mat')
+if isfile('AnalyzedDataFile.mat') == 1
+    load('AnalzedDataFile.mat')
 else
-    LoftTunedData = struct;
+    Study4Data = struct;
     DataTable = table();
     stepIdx = struct;
 end
@@ -171,7 +171,7 @@ for i = 1:length(tmpFiles)
                 
                 tmpTrial  = (...
                     tmpT((Pidx(sq)):(Pidx(sq+1)),:));
-                LoftTunedData.(ID).(Shoe).(Var).RawData.(Squat) = tmpTrial(:,2);
+                Study4Data.(ID).(Shoe).(Var).RawData.(Squat) = tmpTrial(:,2);
                 
                 figure(500+i), plot(tmpTrial(:,2))
                 title(strcat(ID, ' - ', Shoe, ' - ', Var, ' - Raw'))
@@ -193,7 +193,7 @@ for i = 1:length(tmpFiles)
             saveas(figure(600+i), strcat(normdataplotfolder, '\', ID, '_', Shoe, '_', Var, ' _Norm'), 'png');
             close(figure(600+i))
             
-            LoftTunedData.(ID).(Shoe).(Var).NormData = normTrials;
+            Study4Data.(ID).(Shoe).(Var).NormData = normTrials;
        % elseif strcmp(ID, 'S12') == 1 && strcmp(Var, 'GRFz') == 1 
         %    continue
         else
@@ -202,7 +202,7 @@ for i = 1:length(tmpFiles)
                 
                 Step = strcat('Step', num2str(stepnum));
                 s_idx = (stepIdx.(ID).(Shoe).(Step));
-                LoftTunedData.(ID).(Shoe).(Var).RawData.(Step) = tmpT(s_idx,2);
+                Study4Data.(ID).(Shoe).(Var).RawData.(Step) = tmpT(s_idx,2);
                 figure(100+i), plot(tmpT(s_idx,2))
                 hold on
                 
@@ -233,39 +233,39 @@ for i = 1:length(tmpFiles)
             saveas(figure(200+i), strcat(normdataplotfolder, '\', ID, '_', Shoe, '_', Var, ' _Norm'), 'png');
             close(figure(200+i))
             
-            LoftTunedData.(ID).(Shoe).(Var).NormData = normTrials;
+            Study4Data.(ID).(Shoe).(Var).NormData = normTrials;
             
         end
     end
 end
 
- save('LoftTunedData.mat', 'LoftTunedData', 'DataTable', 'stepIdx')
+ save('AnalyzedDataFile.mat', 'Study4Data', 'DataTable', 'stepIdx')
  
  %%%old code
 %  elseif strcmp(Var, 'GRFz') == 1
 % 
 %             if strcmp(Shoe, 'G8min') & strcmp(ID, 'S05') == 1
 %                 %%1st column is index, 2nd has data, 11 has NaNs to skip
-%                 LoftTunedData.(ID).(Shoe).(Var).Data = tmpT(:,[2:10,12]);
+%                 Study4Data.(ID).(Shoe).(Var).Data = tmpT(:,[2:10,12]);
 %             else
 %                 %1st column is index, 2nd has data
-%                 LoftTunedData.(ID).(Shoe).(Var).Data = tmpT(:,2:11);
+%                 Study4Data.(ID).(Shoe).(Var).Data = tmpT(:,2:11);
 %             end
 %         else
 %             %1st column is index, 2 and 3 are mean & SD
-%             LoftTunedData.(ID).(Shoe).(Var).Data = tmpT(:,4:13);
+%             Study4Data.(ID).(Shoe).(Var).Data = tmpT(:,4:13);
 %         end
  
 %% Section 2: Caclulate ensemble curves for each parameter for each shoe for each 
 %subject (can do multiple subjects at one time)
 ShoeMeans = struct;
- ids = fieldnames(LoftTunedData);
+ ids = fieldnames(Study4Data);
 
  count = 0
  for i = 1:length(ids)
      
      ID = char(ids(i));
-     shoes = fieldnames(LoftTunedData.(ID));
+     shoes = fieldnames(Study4Data.(ID));
      
      Group = 'All';
      count = count + 1;
@@ -273,31 +273,31 @@ ShoeMeans = struct;
      for s = 1:length(shoes)
          
          Shoe = char(shoes(s));
-         vars = fieldnames(LoftTunedData.(ID).(Shoe));
+         vars = fieldnames(Study4Data.(ID).(Shoe));
 
          for v = 1:length(vars)
              
              Var = char(vars(v));
 
-             for d = 1:length(LoftTunedData.(ID).(Shoe).(Var).NormData)
+             for d = 1:length(Study4Data.(ID).(Shoe).(Var).NormData)
                  
-                      LoftTunedData.(ID).(Shoe).(Var).Mean(d,1) = mean(...
-                     LoftTunedData.(ID).(Shoe).(Var).NormData(d,:));
+                      Study4Data.(ID).(Shoe).(Var).Mean(d,1) = mean(...
+                     Study4Data.(ID).(Shoe).(Var).NormData(d,:));
                 
              end
              
              if strcmp(Var, 'GRFz') == 1
                  
-              ShoeMeans.(Group).(Var).(Shoe)(:,count) = LoftTunedData.(ID).(Shoe).(Var).Mean;
+              ShoeMeans.(Group).(Var).(Shoe)(:,count) = Study4Data.(ID).(Shoe).(Var).Mean;
 
                  
              elseif strcmp(Var, 'EversionVel') == 1
                  
-                 ShoeMeans.(Group).(Var).(Shoe)(:,count) = LoftTunedData.(ID).(Shoe).(Var).Mean;
+                 ShoeMeans.(Group).(Var).(Shoe)(:,count) = Study4Data.(ID).(Shoe).(Var).Mean;
                  
              elseif strcmp(Var, 'AnkleEversion') == 1
                  
-                 ShoeMeans.(Group).(Var).(Shoe)(:,count) = LoftTunedData.(ID).(Shoe).(Var).Mean;
+                 ShoeMeans.(Group).(Var).(Shoe)(:,count) = Study4Data.(ID).(Shoe).(Var).Mean;
                  
              end
              
@@ -311,14 +311,14 @@ ShoeMeans = struct;
      'PeakAnkFlex', 'AnkFlexROM', 'PeakAnkEv', 'AnkEvROM', 'PeakAnkAdd', 'AnkAddROM',...
      'InclinationAngle', 'MaxEvVel'}) 
 
-T = plot4lvlstruct(LoftTunedData);
-if isfile('LoftTunedData.mat') == 1
+T = plot4lvlstruct(Study4Data);
+if isfile('AnalyzedDataFile.mat') == 1
     DataTable = vertcat(DataTable, T);
 else
     DataTable = T;
 end
 
- save('LoftTunedData.mat', 'LoftTunedData', 'DataTable', 'stepIdx', 'ShoeMeans')
+ save('AnalyzedDataFile.mat', 'Study4Data', 'DataTable', 'stepIdx', 'ShoeMeans')
  
 
  
@@ -359,25 +359,25 @@ end
              
          else
              
-             figure(100-i), plot(LoftTunedData.(ID).(Shoe).GRFz.Mean), ...
+             figure(100-i), plot(Study4Data.(ID).(Shoe).GRFz.Mean), ...
                  title(strcat(ID, ' - ', Shoe))
              pk_idx = ginput(1);
              if isempty(pk_idx) == 1
-                 pk_idx = .2*length(LoftTunedData.(ID).(Shoe).GRFz.Mean);
-                 T.ImpactPeak(t_idx) = max(LoftTunedData.(ID).(Shoe).GRFz.Mean(round(pk_idx)));
+                 pk_idx = .2*length(Study4Data.(ID).(Shoe).GRFz.Mean);
+                 T.ImpactPeak(t_idx) = max(Study4Data.(ID).(Shoe).GRFz.Mean(round(pk_idx)));
              else
-                 T.ImpactPeak(t_idx) = max(LoftTunedData.(ID).(Shoe).GRFz.Mean(1:round(pk_idx(1))));
+                 T.ImpactPeak(t_idx) = max(Study4Data.(ID).(Shoe).GRFz.Mean(1:round(pk_idx(1))));
                  
              end
              
-             T.VALR(t_idx) = (LoftTunedData.(ID).(Shoe).GRFz.Mean(round(pk_idx(1)*.8)) - ...
-                 LoftTunedData.(ID).(Shoe).GRFz.Mean(round(pk_idx(1)*.2))) / ...
+             T.VALR(t_idx) = (Study4Data.(ID).(Shoe).GRFz.Mean(round(pk_idx(1)*.8)) - ...
+                 Study4Data.(ID).(Shoe).GRFz.Mean(round(pk_idx(1)*.2))) / ...
                  (round(pk_idx(1)*.8) - round(pk_idx(1)*.2));
              
              %find max knee angle in run (critical knee angle)
-             [crit_knee_run, run_idx] = min(LoftTunedData.(ID).(Shoe).KneeFlexion.Mean);
+             [crit_knee_run, run_idx] = min(Study4Data.(ID).(Shoe).KneeFlexion.Mean);
              
-             figure(i), subplot(4,shoenum,(j+1)), plot(LoftTunedData.(ID).(Shoe).KneeFlexion.Mean, 'k')
+             figure(i), subplot(4,shoenum,(j+1)), plot(Study4Data.(ID).(Shoe).KneeFlexion.Mean, 'k')
              title(Shoe)
              hold on
              figure(i), subplot(4,shoenum,(j+1)), scatter(run_idx, crit_knee_run, mk_prop)
@@ -385,17 +385,17 @@ end
              %find where critical knee angle occurs in eccentric portion of squat -
              %isolate eccentric portion by finding time between initiation and peak
              %angle
-             [peak_squat_ang, pksq] = min(LoftTunedData.(ID).(Shoe).KneeFlexion.Mean); %indexing peak squat angle to find eccentric portion
+             [peak_squat_ang, pksq] = min(Study4Data.(ID).(Shoe).KneeFlexion.Mean); %indexing peak squat angle to find eccentric portion
              
              %since data has been resampled to 100 points, the exact
              %critical knee angle may not appear in the squat data. 
              %Find closest angle by finding the minumum absolute difference
              %between critical knee angle and (eccentric portion) squat data 
              [diff, squat_idx] = min(abs(...
-                 LoftTunedData.(ID).Squat_Trial.KneeFlexion.Mean(1:pksq)-crit_knee_run));
+                 Study4Data.(ID).Squat_Trial.KneeFlexion.Mean(1:pksq)-crit_knee_run));
              
-             crit_knee_squat = LoftTunedData.(ID).Squat_Trial.KneeFlexion.Mean(squat_idx);
-             figure(i), subplot(4,shoenum,1), plot(LoftTunedData.(ID).Squat_Trial.KneeFlexion.Mean, 'k')
+             crit_knee_squat = Study4Data.(ID).Squat_Trial.KneeFlexion.Mean(squat_idx);
+             figure(i), subplot(4,shoenum,1), plot(Study4Data.(ID).Squat_Trial.KneeFlexion.Mean, 'k')
              title('Squat')
              ylabel('Knee Flex.')
              hold on
@@ -404,36 +404,36 @@ end
              %find angles (tib rot, eversion, knee abd/add) at time point of crit
              %knee angle in run
              
-             crit_ev_run = LoftTunedData.(ID).(Shoe).AnkleEversion.Mean(run_idx);
-             figure(i), subplot(4,shoenum,shoenum+(j+1)), plot(LoftTunedData.(ID).(Shoe).AnkleEversion.Mean, 'k')
+             crit_ev_run = Study4TunedData.(ID).(Shoe).AnkleEversion.Mean(run_idx);
+             figure(i), subplot(4,shoenum,shoenum+(j+1)), plot(Study4Data.(ID).(Shoe).AnkleEversion.Mean, 'k')
              hold on
              figure(i), subplot(4,shoenum,shoenum+(j+1)), scatter(run_idx, crit_ev_run, mk_prop)
              
-             crit_TR_run = LoftTunedData.(ID).(Shoe).TibialRotation.Mean(run_idx);
-             figure(i), subplot(4,shoenum,(2*shoenum+(j+1))), plot(LoftTunedData.(ID).(Shoe).TibialRotation.Mean, 'k')
+             crit_TR_run = Study4Data.(ID).(Shoe).TibialRotation.Mean(run_idx);
+             figure(i), subplot(4,shoenum,(2*shoenum+(j+1))), plot(Study4Data.(ID).(Shoe).TibialRotation.Mean, 'k')
              hold on
              figure(i), subplot(4,shoenum,(2*shoenum+(j+1))), scatter(run_idx, crit_TR_run, mk_prop)
              
-             crit_KA_run = LoftTunedData.(ID).(Shoe).KneeAdduction.Mean(run_idx);
-             figure(i), subplot(4,shoenum,(3*shoenum+(j+1))), plot(LoftTunedData.(ID).(Shoe).KneeAdduction.Mean, 'k')
+             crit_KA_run = Study4Data.(ID).(Shoe).KneeAdduction.Mean(run_idx);
+             figure(i), subplot(4,shoenum,(3*shoenum+(j+1))), plot(Study4Data.(ID).(Shoe).KneeAdduction.Mean, 'k')
              hold on
              figure(i), subplot(4,shoenum,(3*shoenum+(j+1))), scatter(run_idx, crit_KA_run, mk_prop)
              
              %find angles at time point of critical knee angle in squat
-             crit_ev_squat = LoftTunedData.(ID).Squat_Trial.AnkleEversion.Mean(squat_idx);
-             figure(i), subplot(4,shoenum,shoenum+1), plot(LoftTunedData.(ID).Squat_Trial.AnkleEversion.Mean, 'k')
+             crit_ev_squat = Study4Data.(ID).Squat_Trial.AnkleEversion.Mean(squat_idx);
+             figure(i), subplot(4,shoenum,shoenum+1), plot(Study4Data.(ID).Squat_Trial.AnkleEversion.Mean, 'k')
              ylabel('Eversion')
              hold on
              figure(i), subplot(4,shoenum,shoenum+1), scatter(squat_idx, crit_ev_squat, mk_prop)
              
-             crit_TR_squat = LoftTunedData.(ID).Squat_Trial.TibialRotation.Mean(squat_idx);
-             figure(i), subplot(4,shoenum,2*shoenum+1), plot(LoftTunedData.(ID).Squat_Trial.TibialRotation.Mean, 'k')
+             crit_TR_squat = Study4Data.(ID).Squat_Trial.TibialRotation.Mean(squat_idx);
+             figure(i), subplot(4,shoenum,2*shoenum+1), plot(Study4Data.(ID).Squat_Trial.TibialRotation.Mean, 'k')
              ylabel('Tibial Rotation')
              hold on
              figure(i), subplot(4,shoenum,2*shoenum+1), scatter(squat_idx, crit_TR_squat, mk_prop)
              
-             crit_KA_squat = LoftTunedData.(ID).Squat_Trial.KneeAdduction.Mean(squat_idx);
-             figure(i), subplot(4,shoenum,3*shoenum+1), plot(LoftTunedData.(ID).Squat_Trial.KneeAdduction.Mean, 'k')
+             crit_KA_squat = Study4Data.(ID).Squat_Trial.KneeAdduction.Mean(squat_idx);
+             figure(i), subplot(4,shoenum,3*shoenum+1), plot(Study4Data.(ID).Squat_Trial.KneeAdduction.Mean, 'k')
              ylabel('Knee Add/Abd')
              hold on
              figure(i), subplot(4,shoenum,3*shoenum+1), scatter(squat_idx, crit_KA_squat, mk_prop)
@@ -469,16 +469,13 @@ end
      close(figure(i))
  end
  
-  save('LoftTunedData.mat', 'LoftTunedData', 'DataTable', 'stepIdx', 'T',...
+  save('AnalyzedDataFile.mat', 'Study4Data', 'DataTable', 'stepIdx', 'T',...
      'ShoeMeans') %, 'GRFmeansH', 'EvVELmeansH', 'AnkEVmeansH', ...
      %'GRFmeansL', 'EvVELmeansL', 'AnkEVmeansL')
-    %%%add code to get deviator group (7 as threshold in sock) - do in R?
-    %%%add code to get 'LoftTuned Dev' = ShoeCnd - Control?
-    %%%add code to plot shoe means across stance
   %% 
     
 %add code to get mass from GRFz
 
-  writetable(T, 'LoftTunedData_080821.xlsx')
+  writetable(T, 'AnalyzedDataFile.xlsx')
 
 
