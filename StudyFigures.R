@@ -8,12 +8,12 @@ library(ggpubr)
 font_import()
 loadfonts(device = "win", quiet = TRUE)
 
-setwd("C:/Users/msalzano/OneDrive - University of Massachusetts/UMass/Brooks/Loftv4Tuned")
+setwd("filepath") #actual filepath removed
 savefolder = paste0(getwd(), '/ReportPlots/')
 
 #### load in deviation and survey data ####
-Loft4T = as.data.frame(read_excel("C:/Users/msalzano/OneDrive - University of Massachusetts/Brooks/Loft_v4_Tuned/Analysis_withStatic/Loft4Data_081221.xlsx"))
-Loft4Survey = as.data.frame(read_excel("C:/Users/msalzano/OneDrive - University of Massachusetts/Brooks/Loft_v4_Tuned/Analysis_withStatic/BrooksLoft4Survey.xlsx"))
+Loft4T = as.data.frame(read_excel("BiomechanicsData"))  #Excel file name removed
+Loft4Survey = as.data.frame(read_excel("SurveyData")) #Excel file name revmoed
 names(Loft4T)[1] = 'ID'
 
 Loft4ALL = Loft4T[order(Loft4T$ID),]
