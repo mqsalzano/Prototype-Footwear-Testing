@@ -11,15 +11,15 @@ loadfonts(device = "win", quiet = TRUE)
 setwd("filepath") #actual filepath removed
 savefolder = paste0(getwd(), '/ReportPlots/')
 
-#### load in deviation and survey data ####
-Loft4T = as.data.frame(read_excel("BiomechanicsData"))  #Excel file name removed
-Loft4Survey = as.data.frame(read_excel("SurveyData")) #Excel file name revmoed
-names(Loft4T)[1] = 'ID'
+#### load in biomechanics and survey data ####
+Study4T = as.data.frame(read_excel("BiomechanicsData"))  #Excel file name removed
+Study4Survey = as.data.frame(read_excel("SurveyData")) #Excel file name revmoed
+names(Study4T)[1] = 'ID'
 
-Loft4ALL = Loft4T[order(Loft4T$ID),]
-Loft4ALL$TrueKneeDev = Loft4ALL$TibRotDev + Loft4ALL$KneeAddDev
+Study4ALL = Study4T[order(Study4T$ID),]
+Study4ALL$TrueKneeDev = Study4ALL$TibRotDev + Study4ALL$KneeAddDev
 
-Loft4SurveyNew = data.frame()
+Study4SurveyNew = data.frame()
 ShoeQs = c('ShoeCnd', 'CushionSatisfaction', 'LikeCushion', 'CushionExplain', 'Transition', 'ThisShoe_')
 
 
@@ -30,24 +30,24 @@ ShoeQs = c('ShoeCnd', 'CushionSatisfaction', 'LikeCushion', 'CushionExplain', 'T
 for (i in 1:4) {
   
   shoe_col = (i*6) - 3
-  tmpData = Loft4Survey[,c(2, shoe_col:(shoe_col+5))]
+  tmpData = Study4Survey[,c(2, shoe_col:(shoe_col+5))]
   names(tmpData) = c('ID', ShoeQs)
-  Loft4SurveyNew = rbind(Loft4SurveyNew, tmpData)
+  Study4SurveyNew = rbind(Study4SurveyNew, tmpData)
   
 }
 
-Loft4SurveyNew$ThisShoe_ = factor(Loft4SurveyNew$ThisShoe_)
-Loft4SurveyNew = Loft4SurveyNew[order(Loft4SurveyNew$ID),]
+Study4SurveyNew$ThisShoe_ = factor(Study4SurveyNew$ThisShoe_)
+Study4SurveyNew = Study4SurveyNew[order(Study4SurveyNew$ID),]
 
-#### create dataframe for ID, Sex, Deviator Group, & Total Knee Deviation ####
-unqID.idx = duplicated(Loft4SurveyNew$ID)
-unqSubj = Loft4SurveyNew[!unqID.idx, c(1)] # add second column back when Sex is added
+#### create dataframe for ID, Sex, Group, & Total Knee Angle Difference####
+unqID.idx = duplicated(Study4SurveyNew$ID)
+unqSubj = Study4SurveyNew[!unqID.idx, c(1)] # add second column back when Sex is added
 SubjSex = c('Male', 'Male', 'Male', 'Male', 'Female')
 Subj = data.frame( "ID" = unqSubj, "Sex" = SubjSex)
 #names(Subj) = c('ID', 'Sex')
 #Subj = Subj[order(Subj$ID),]
-ShoeList = unique(Loft4T$ShoeCnd)
-Sock = Loft4T[(which(Loft4T$ShoeCnd == 'Sock_8min')), c(1,2,35,40)] # ID, Shoe (Sock), Total Knee Dev, Dev Group
+ShoeList = unique(Study4T$ShoeCnd)
+Sock = Study4T[(which(Study4T$ShoeCnd == 'Sock_8min')), c(1,2,35,40)] # ID, Shoe (Sock), Total Knee Dev, Dev Group
 names(Sock)[1] = 'ID'
 
 Subj = merge(Subj, Sock, by = "ID", all = TRUE)
@@ -81,9 +81,9 @@ plot_theme =   theme(text = element_text(family = "Calibri", face = "bold"),
                      legend.text = element_text(face = "bold", size = 18, color = "black"))#,
                      #legend.position = "top")
 
-#### create bar plots showing # of males/females per group & total knee deviation ####
+#### create bar plots showing # of males/females per group & total knee angle difference ####
 SubjCount = Subj %>% count(Sex, DevGroup)
-#bar plot showing counts males and females in each deviator group
+#bar plot showing counts males and females in each group
 SubjCountPlot = ggplot(data = Subj,
                        aes(x = DevGroup, color = Sex, fill = Sex)) +
  geom_bar(aes(color = Sex, fill = Sex), 
@@ -92,18 +92,18 @@ SubjCountPlot = ggplot(data = Subj,
             position = position_stack(vjust = 0.5), show.legend = FALSE)+
   scale_color_manual(values = c('black', 'black')) +
   scale_fill_manual(values = c(cb_darkred,cb_darkblue)) + 
-  xlab('Deviator Group') + plot_theme + geom_hline(yintercept = 0, linetype = 1)+ theme(legend.position = "top") 
+  xlab('Group') + plot_theme + geom_hline(yintercept = 0, linetype = 1)+ theme(legend.position = "top") 
 ggsave(filename = paste0(savefolder, 'SubjCountPlot.png'), plot = SubjCountPlot, width = 4, height = 6)
 print(SubjCountPlot)
-#column bar chart showing deviation values for each subject
+#column bar chart showing angle difference values for each subject
 SubjDevPlot = 
 ggplot(data = Subj, aes(x = ID, y = TotalKneeDev))+ 
   geom_hline(yintercept = c(0,7), linetype = c(1,2), size = c(1,1)) +
   geom_col(aes(color = Sex, fill = Sex), width = .5) + ylim(0, 25) +
   geom_text(aes(label = round(TotalKneeDev, digits = 1)), vjust = -0.5) +
   scale_color_manual(values = c('black', 'black')) +
-  scale_fill_manual(values = c(cb_darkblue, cb_darkred)) +  #had to switch colors since no female deviation
-  xlab('Deviator Group') + ylab('Total Knee Dev. (deg.)') +
+  scale_fill_manual(values = c(cb_darkblue, cb_darkred)) +  #had to switch colors since no female
+  xlab('Group') + ylab('Total Knee Dev. (deg.)') +
   plot_theme + theme(legend.position = "none") 
 ggsave(filename = paste0(savefolder, 'SubjDevPlot.png'), plot = SubjDevPlot, width = 9, height = 6)
 print(SubjDevPlot)
@@ -112,7 +112,7 @@ print(SubjDevPlot)
 # How do jerk, transition perception, and re-supination differ between C1 & C2? #
 RQ1.JerkRF = Subj[-5,c(1,2,5)]
 for (i in 1:(length(ShoeList)-2)) {
-  tmp_col = Loft4ALL$JerkRF[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+  tmp_col = Study4ALL$JerkRF[which(Study4ALL$ShoeCnd == ShoeList[i])]
   RQ1.JerkRF = cbind(RQ1.JerkRF, tmp_col)
 }
 
@@ -148,7 +148,7 @@ RQ1.JerkRF.New =
                    labels = c("C1", "C2"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = JerkRF, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
   ylab('Jerk Cost') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(-10000, 10000), breaks = seq(-10000, 10000, 2000)) +
   plot_theme + theme(legend.position = "bottom") + labs(title = "Rearfoot") 
@@ -158,7 +158,7 @@ ggsave(filename = paste0(savefolder, 'RQ1JerkRFNew.png') ,plot = RQ1.JerkRF.New,
 
 RQ1.JerkFF = Subj[-5,c(1,2,5)]
 for (i in 1:(length(ShoeList)-2)) {
-  tmp_col = Loft4ALL$JerkFF[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+  tmp_col = Study4ALL$JerkFF[which(Study4ALL$ShoeCnd == ShoeList[i])]
   RQ1.JerkFF = cbind(RQ1.JerkFF, tmp_col)
 }
 
@@ -193,7 +193,7 @@ RQ1.JerkFF.New =
                    labels = c("C1", "C2"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = JerkFF, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
   ylab('Jerk Cost') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(-25000, 25000), breaks = seq(-25000, 25000, 5000)) +
   plot_theme  + theme(legend.position = "bottom") + labs(title = "Forefoot")
@@ -203,7 +203,7 @@ ggsave(filename = paste0(savefolder, 'RQ1JerkFFNew.png') ,plot = RQ1.JerkFF.New,
 
 
 #### Research Question 1 - Transition Perception ####
-RQ1.Transition = Loft4SurveyNew[,c(1,2,6)]
+RQ1.Transition = Study4SurveyNew[,c(1,2,6)]
 
 for (i in 1:length(unqSubj)) {
 
@@ -228,7 +228,7 @@ RQ1.Transition.Male =
                    labels = c("C1", "C4"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = Transition, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
   ylab('Transition Score') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(0,10), breaks = seq(0, 10, 1)) +
   plot_theme  + theme(legend.position = "bottom") #+ labs(title = "Males")
@@ -240,7 +240,7 @@ ggsave(filename = paste0(savefolder, 'RQ1TransitionMale.png') ,plot = RQ1.Transi
 
 #### Research Question 1 - Resupination ####
 
-ResupinationStance = as.data.frame(read_excel("C:/Users/msalzano/OneDrive - University of Massachusetts/Brooks/Loft_v4_Tuned/Analysis_withStatic/ResupinationStance.xlsx"))
+ResupinationStance = as.data.frame(read_excel("MoreBiomechanicsData"))
 maleID = Subj$ID[which(Subj$Sex == 'Male')]
 femaleID = Subj$ID[which(Subj$Sex == 'Female')]
 
@@ -283,11 +283,11 @@ for (i in 1:length(maleID)) {
 print(ggarrange(plotlist = ResupinationMaleList, ncol = 2, nrow = 2))
 ggsave(ggarrange(plotlist = ResupinationMaleList, ncol = 2, nrow = 2), filename = paste0(savefolder, 'ResupinationMalePlot.png'), height = 4, width = 8)
 
-#### Research Question 2 - Deviations ####
+#### Research Question 2 ####
   # Do biomechanics differ between C1 & C2? #
 RQ2.EvDev = Subj[-5,c(1,2,5)]
 for (i in 1:(length(ShoeList)-2)) {
-  tmp_col = Loft4ALL$EvDev[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+  tmp_col = Study4ALL$EvDev[which(Study4ALL$ShoeCnd == ShoeList[i])]
   RQ2.EvDev = cbind(RQ2.EvDev, tmp_col)
 }
 
@@ -322,8 +322,8 @@ RQ2.EvDev.Male =
   scale_x_discrete(limits = c("C1_8min", "C2_8min"),#,"C3_8min","C4_8min"),
                    labels = c("C1", "C2"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = EversionDev, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
-  ylab('\u0394 Eversion Deviation (deg.)') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  ylab('\u0394 Eversion Angle Difference(deg.)') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(-10, 10), breaks = seq(-10, 10, 2)) +
   plot_theme + theme(legend.position = "bottom") 
@@ -335,7 +335,7 @@ ggsave(filename = paste0(savefolder, 'RQ2EvDevMale.png') ,plot = RQ2.EvDev.Male,
 #Tibial Rotation Plots
 RQ2.TibRotDev = Subj[-5,c(1,2,5)]
 for (i in 1:(length(ShoeList)-2)) {
-  tmp_col = Loft4ALL$TibRotDev[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+  tmp_col = Study4ALL$TibRotDev[which(Study4ALL$ShoeCnd == ShoeList[i])]
   RQ2.TibRotDev = cbind(RQ2.TibRotDev, tmp_col)
 }
 
@@ -366,8 +366,8 @@ ggplot(data = RQ2.TibRotDevNew[which(RQ2.TibRotDevNew$Sex == 'Male'),], aes(x = 
   scale_x_discrete(limits = c("C1_8min", "C2_8min"),#,"C3_8min","C4_8min"),
                    labels = c("C1", "C2"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = TibRotDev, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
-  ylab('\u0394 Tib. Rotation Deviation (deg.)') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  ylab('\u0394 Tib. Rotation Angle Difference (deg.)') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(-10, 10), breaks = seq(-10, 10, 2)) +
 plot_theme  + theme(legend.position = "bottom")  
@@ -377,10 +377,10 @@ ggsave(file = paste0(savefolder, 'RQ2TibRotMale.png'), plot = RQ2.TibRot.Male, h
 
 
 
-#Knee Abd/Add Deviation Plots
+#Knee Abd/Add Angle Difference Plots
 RQ2.KneeAddDev = Subj[-5,c(1,2,5)]
 for (i in 1:(length(ShoeList)-2)) {
-  tmp_col = Loft4ALL$KneeAddDev[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+  tmp_col = Study4ALL$KneeAddDev[which(Study4ALL$ShoeCnd == ShoeList[i])]
   RQ2.KneeAddDev = cbind(RQ2.KneeAddDev, tmp_col)
 }
 
@@ -407,8 +407,8 @@ ggplot(data = RQ2.KneeAddDevNew[which(RQ2.KneeAddDevNew$Sex == 'Male'),], aes(x 
   scale_x_discrete(limits = c("C1_8min", "C2_8min"),#,"C3_8min","C4_8min"),
                    labels = c("C1", "C2"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = KneeAddDev, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
-  ylab('\u0394 Knee Abd/Add. Deviation (deg.)') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  ylab('\u0394 Knee Abd/Add. Angle Difference(deg.)') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(-5,5), breaks = seq(-5,5,1)) +
 plot_theme  + theme(legend.position = "bottom") 
@@ -421,7 +421,7 @@ ggsave(filename = paste0(savefolder, 'RQ2KAMale.png'), plot = RQ2.KA.Male, heigh
 #Max Eversion Velocity plots 
 RQ2.MaxEV = Subj[-5,c(1,2,5)]
 for (i in 1:(length(ShoeList)-2)) {
-  tmp_col = Loft4ALL$NEG_POS_peak_EversionVel[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+  tmp_col = Study4ALL$NEG_POS_peak_EversionVel[which(Study4ALL$ShoeCnd == ShoeList[i])]
   RQ2.MaxEV = cbind(RQ2.MaxEV, tmp_col)
 }
 
@@ -449,7 +449,7 @@ ggplot(data = RQ2.MaxEVNew[which(RQ2.MaxEVNew$Sex == 'Male'),], aes(x =Shoe, y =
                    labels = c("C1", "C2"))+#, "C3", "C4")) +
   #geom_point(data = meansEv, aes(x = Shoe, y = MaxEV, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
   ylab('\u0394 Eversion Velocity (deg./s)') +
-  labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+  labs(color = 'Group', shape = 'Group', linetype = 'Group') +
   #ylim(c(-10, 10)) +
   scale_y_continuous(limits = c(-100,100), breaks = seq(-100,100,20)) +
  plot_theme  + theme(legend.position = "bottom") 
@@ -461,7 +461,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
 #### Research Question 2 - Impact Metrics ####
   RQ2.ImpactPeak = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$ImpactPeak[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$ImpactPeak[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ2.ImpactPeak = cbind(RQ2.ImpactPeak, tmp_col)
   }
   
@@ -496,7 +496,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = ImpactPeak, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('Impact Peak (BW)') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-0.25, 0.25), breaks = seq(-0.25, 0.25, 0.05)) +
     plot_theme + labs(title = "Impact Peak") + theme(legend.position = "bottom") 
@@ -507,7 +507,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   #VALR
   RQ2.VALR = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$VALR[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$VALR[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ2.VALR = cbind(RQ2.VALR, tmp_col)
   }
   
@@ -542,7 +542,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = VALR, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('BW/s') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-0.025, 0.025), breaks = seq(-0.025, 0.025, 0.005)) +
     plot_theme + labs(title = "VALR") + theme(legend.position = "bottom") 
@@ -552,7 +552,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   
   
   
-  GRFzStance = as.data.frame(read_excel("C:/Users/msalzano/OneDrive - University of Massachusetts/Brooks/Loft_v4_Tuned/Analysis_withStatic/GRFzStance.xlsx"))
+  GRFzStance = as.data.frame(read_excel("ForceData"))
   maleID = Subj$ID[which(Subj$Sex == 'Male')]
   femaleID = Subj$ID[which(Subj$Sex == 'Female')]
   
@@ -615,7 +615,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
 #### Research Question 2 - Runmetrics ####
   RQ2.Cadence = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$Cadence[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$Cadence[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ2.Cadence = cbind(RQ2.Cadence, tmp_col)
   }
   
@@ -650,7 +650,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = Cadence, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('Steps/min.') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-5, 5), breaks = seq(-5, 5, 1)) +
     plot_theme + labs(title = "Cadence") + theme(legend.position = "bottom") 
@@ -661,7 +661,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   
   RQ2.ContactTime = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$ContactTime[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$ContactTime[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ2.ContactTime = cbind(RQ2.ContactTime, tmp_col)
   }
   
@@ -696,7 +696,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = ContactTime, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('seconds') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-0.015, 0.015), breaks = seq(-0.015, 0.015, 0.005)) +
     plot_theme + labs(title = "Contact time") + theme(legend.position = "bottom") 
@@ -708,7 +708,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
 #### Research Question 2 - Foot Posture at Landing ####
   RQ2.InclinationAngle = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$InclinationAngleFS[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$InclinationAngleFS[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ2.InclinationAngle = cbind(RQ2.InclinationAngle, tmp_col)
   }
   
@@ -743,7 +743,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = InclinationAngle, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('\u0394 Angle (deg.)') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-5, 5), breaks = seq(-5, 5, 1)) +
     plot_theme + theme(legend.position = "bottom") 
@@ -752,10 +752,10 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   ggsave(filename = paste0(savefolder, 'RQ2InclinationAngleNew.png') ,plot = RQ2.InclinationAngle.New, height = 4, width = 6.5 )
   
   
-#### Research Question 3 - Deviations ####
+#### Research Question 3 ####
   RQ3.EvDev = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$EvDev[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$EvDev[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ3.EvDev = cbind(RQ3.EvDev, tmp_col)
   }
   
@@ -790,8 +790,8 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
     scale_x_discrete(limits = c("C3_8min", "C1_8min", "C2_8min"),#,"C3_8min","C4_8min"),
                      labels = c("C3","C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = EversionDev, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
-    ylab('\u0394 Eversion Deviation (deg.)') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    ylab('\u0394 Eversion Angle Difference(deg.)') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-10, 10), breaks = seq(-10, 10, 2)) +
     plot_theme + theme(legend.position = "bottom") 
@@ -803,7 +803,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   #Tibial Rotation Plots
   RQ3.TibRotDev = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$TibRotDev[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$TibRotDev[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ3.TibRotDev = cbind(RQ3.TibRotDev, tmp_col)
   }
   
@@ -834,8 +834,8 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
     scale_x_discrete(limits = c("C3_8min", "C1_8min", "C2_8min"),#,"C3_8min","C4_8min"),
                      labels = c("C3","C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = TibRotDev, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
-    ylab('\u0394 Tib. Rotation Deviation (deg.)') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    ylab('\u0394 Tib. Rotation Angle Difference(deg.)') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-10, 10), breaks = seq(-10, 10, 2)) +
     plot_theme  + theme(legend.position = "bottom")  
@@ -845,10 +845,10 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   
   
   
-  #Knee Abd/Add Deviation Plots
+  #Knee Abd/Add Angle Difference Plots
   RQ3.KneeAddDev = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$KneeAddDev[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$KneeAddDev[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ3.KneeAddDev = cbind(RQ3.KneeAddDev, tmp_col)
   }
   
@@ -875,8 +875,8 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
     scale_x_discrete(limits = c("C3_8min", "C1_8min", "C2_8min"),#,"C3_8min","C4_8min"),
                      labels = c("C3","C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = KneeAddDev, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
-    ylab('\u0394 Knee Abd/Add. Deviation (deg.)') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    ylab('\u0394 Knee Abd/Add. Angle Difference (deg.)') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-5,5), breaks = seq(-5,5,1)) +
     plot_theme  + theme(legend.position = "bottom") 
@@ -889,7 +889,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   #Max Eversion Velocity plots 
   RQ3.MaxEV = Subj[-5,c(1,2,5)]
   for (i in 1:(length(ShoeList)-2)) {
-    tmp_col = Loft4ALL$NEG_POS_peak_EversionVel[which(Loft4ALL$ShoeCnd == ShoeList[i])]
+    tmp_col = Study4ALL$NEG_POS_peak_EversionVel[which(Study4ALL$ShoeCnd == ShoeList[i])]
     RQ3.MaxEV = cbind(RQ3.MaxEV, tmp_col)
   }
   
@@ -917,7 +917,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C3","C1", "C2"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = MaxEV, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('\u0394 Eversion Velocity (deg./s)') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(-100,100), breaks = seq(-100,100,20)) +
     plot_theme  + theme(legend.position = "bottom") 
@@ -927,17 +927,17 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
 
   #### Research Question 3 - Perception of Support ####
   
-  unqSupportResponse = unique(Loft4SurveyNew$ThisShoe_)
-  Loft4SurveyNew$Supported = 0
-  Loft4SurveyNew$Supported[which(Loft4SurveyNew$ThisShoe_ == unqSupportResponse[1])] = 'C'
-  Loft4SurveyNew$Supported[which(Loft4SurveyNew$ThisShoe_ == unqSupportResponse[2])] = 'D'
-  Loft4SurveyNew$Supported[which(Loft4SurveyNew$ThisShoe_ == unqSupportResponse[3])] = 'A'
-  Loft4SurveyNew$Supported[which(Loft4SurveyNew$ThisShoe_ == unqSupportResponse[4])] = 'B'
+  unqSupportResponse = unique(Study4SurveyNew$ThisShoe_)
+  Study4SurveyNew$Supported = 0
+  Study4SurveyNew$Supported[which(Study4SurveyNew$ThisShoe_ == unqSupportResponse[1])] = 'C'
+  Study4SurveyNew$Supported[which(Study4SurveyNew$ThisShoe_ == unqSupportResponse[2])] = 'D'
+  Study4SurveyNew$Supported[which(Study4SurveyNew$ThisShoe_ == unqSupportResponse[3])] = 'A'
+  Study4SurveyNew$Supported[which(Study4SurveyNew$ThisShoe_ == unqSupportResponse[4])] = 'B'
   
-  SupportedCount = Loft4SurveyNew %>% count(Supported, ShoeCnd)
+  SupportedCount = Study4SurveyNew %>% count(Supported, ShoeCnd)
 
   SupportedAll = 
-    ggplot(data = Loft4SurveyNew, aes(x = ShoeCnd, fill = Supported, color = Supported)) +
+    ggplot(data = Study4SurveyNew, aes(x = ShoeCnd, fill = Supported, color = Supported)) +
     geom_bar() + plot_theme  + theme(legend.position = "none") +
     scale_color_manual(values = c('black', 'black','black','black'))+
     scale_fill_manual(values = c(cb_darkblue, cb_yellow, 'black', umass_grey)) +
@@ -987,7 +987,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   
 
 #### Research Question 4 - Cushion Perception ####
-  RQ4.Cushion = Loft4SurveyNew[,c(1,2,3)]
+  RQ4.Cushion = Study4SurveyNew[,c(1,2,3)]
   names(RQ4.Cushion)[3] = 'Cushion'
   
   for (i in 1:length(unqSubj)) {
@@ -1019,7 +1019,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C4"))+#, "C3", "C4")) +
     #geom_point(data = meansEv, aes(x = Shoe, y = Cushion, group = DevGroup, color = DevGroup), shape = 18, size = 10) + 
     ylab('Cushion Score') +
-    labs(color = 'Deviation Group', shape = 'Deviation Group', linetype = 'Deviation Group') +
+    labs(color = 'Group', shape = 'Group', linetype = 'Group') +
     #ylim(c(-10, 10)) +
     scale_y_continuous(limits = c(0,10), breaks = seq(0, 10, 1)) +
     plot_theme  + theme(legend.position = "bottom") #+ labs(title = "Males")
@@ -1027,17 +1027,17 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   print(RQ4.Cushion.All)
   ggsave(filename = paste0(savefolder, 'RQ4CushionAll.png') ,plot = RQ4.Cushion.All, height = 5, width = 8 )
   
-  unqLikeCushion = unique(Loft4SurveyNew$LikeCushion)
-  Loft4SurveyNew$CushionLikeNew = 0
-  Loft4SurveyNew$CushionLikeNew[which(Loft4SurveyNew$LikeCushion == unqLikeCushion[1])] = 'Y'
-  Loft4SurveyNew$CushionLikeNew[which(Loft4SurveyNew$LikeCushion == unqLikeCushion[2])] = 'M'
-  Loft4SurveyNew$CushionLikeNew[which(Loft4SurveyNew$LikeCushion == unqLikeCushion[3])] = 'N'
+  unqLikeCushion = unique(Study4SurveyNew$LikeCushion)
+  Study4SurveyNew$CushionLikeNew = 0
+  Study4SurveyNew$CushionLikeNew[which(Study4SurveyNew$LikeCushion == unqLikeCushion[1])] = 'Y'
+  Study4SurveyNew$CushionLikeNew[which(Study4SurveyNew$LikeCushion == unqLikeCushion[2])] = 'M'
+  Study4SurveyNew$CushionLikeNew[which(Study4SurveyNew$LikeCushion == unqLikeCushion[3])] = 'N'
   
   
-  LikeCushionCount = Loft4SurveyNew %>% count(CushionLikeNew, ShoeCnd)
+  LikeCushionCount = Study4SurveyNew %>% count(CushionLikeNew, ShoeCnd)
   
   LikeCushionAll = 
-    ggplot(data = Loft4SurveyNew, aes(x = ShoeCnd, fill = CushionLikeNew, color = CushionLikeNew)) +
+    ggplot(data = Study4SurveyNew, aes(x = ShoeCnd, fill = CushionLikeNew, color = CushionLikeNew)) +
     geom_bar() + plot_theme  + theme(legend.position = "none") +
     scale_color_manual(values = c('black', 'black','black','black'))+
     scale_fill_manual(values = c(cb_darkblue, cb_yellow, 'black', umass_grey)) +
@@ -1049,7 +1049,7 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
   ggsave(filename = paste0(savefolder, 'LikeCushionAllPlot.png'), plot = LikeCushionAll, width = 4, height = 6)
   
 #### Overall Cushion Rank ####
-  OverallCushion = Loft4Survey[,c(2,3,27:30)]
+  OverallCushion = Study4Survey[,c(2,3,27:30)]
   names(OverallCushion) = c('ID', 'Sex', 'C1', 'C2', 'C3','C4')
   OverallCushion = OverallCushion[order(OverallCushion$ID),]
   OverallCushion$DevGroup = Subj$DevGroup
@@ -1084,4 +1084,6 @@ ggsave(filename = paste0(savefolder, 'RQ2MaxEVMale.png'), plot = RQ2.MaxEV.Male,
                      labels = c("C1", "C2", "C3", "C4"))
   print(OverallCushionPlot)
   ggsave(filename = paste0(savefolder, 'OverallCushionPlot.png'), plot = OverallCushionPlot, width = 4, height = 6)
+  
+
   
