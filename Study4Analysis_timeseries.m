@@ -7,7 +7,7 @@ LowDevIdx = ismember(unique(T.Subj_ID, 'stable'), LowDev);
 StanceData = table(0,0,0,0,0,0,0,0);
 StanceData.Properties.VariableNames = {'Subj_ID', 'DevGroup', 'PctStance', 'C1', 'C2','C3','C4','C5'};
 SubjList = unique(T.Subj_ID, 'stable');
-ShoeList = fieldnames(ShoeMeans.All.GRFz);
+ShoeList = fieldnames(ShoeMeans.All.GRFz);  %replace GRFz with other variable names as needed
 NormTime = [1:100]';
 
 for i = 1:length(SubjList)
