@@ -1,1 +1,1 @@
-# Protype-Footwear-Testing
+# Prototype-Footwear-Testing
