@@ -1,10 +1,10 @@
 %% Section 1A - get the time indices for each squat in the squat trials and 
 % for each stance phase in the run trials (one subject at a time)
 
-%import variables the put 10 trials into a structure
+%import variables the put 10 steps into a structure
 clear all
 
-%import ASCII file
+%import ASCII file - time series of entire 15-30 second trial
 %create structure for each subject with each condition as a substructure,
 %each of which holds the variables, which at 101x10 matrices
 
@@ -24,28 +24,34 @@ else
     stepIdx = struct;
 end
 
-%grab right knee angle for squat trial only to find peaks - will allow for
-%separation into 10 trials for each variable later on
+%load in squat trial and separate out each squat - needed for deviation calculation later
    filelist = {tmpFiles(:).name};
    tmpfilename = tmpFiles(...
     contains(string(filelist), 'Squat') &...
     contains(string(filelist), 'KneeFlexion') == 1).name;
    KneeAngleSquat = table2array(...
     readtable(strcat(expfolder, '/', tmpfilename)));
-   [pks, Pidx] = getTrials(KneeAngleSquat);
+   [pks, Pidx] = getTrials(KneeAngleSquat); %external function to separate each squat
 
-% for each shoe condition, load in GRFz to separate out each step and get
-% indices to apply for each variable
+% Next portion of code essentially replicates V3D's step detection (heel strike to toe off)
+% for each shoe condition, load in GRFz to separate out each step and grab time indices for each step
+% time indices will be used in order to separate out steps for every other variable 
 shoelist = {'C1', 'C2', 'C3', 'C4', 'Sock'};
 expfolder2 = uigetdir()
-first_step_peak = input('What is the order of first peak for right leg?: ')
+
+% used V3D to note which full GRFz peak in the full time series
+% was the first step with the right leg for each condition
+% input for the next line is an array (e.g. [1 2 2 1 2] ) 
+first_step_peak = input('What is the order of first peak for right leg?: ') 
 
 for cnd = 1:length(shoelist) 
-    
+   
+   % appending to '_8min' to the shoe condition in order to find correct file name
+   % need to do this based on our own naming convention
    % if cnd < length(shoelist)
-    Shoe = strcat( char(shoelist(cnd)), '_8min');
+    Shoe = strcat( char(shoelist(cnd)), '_8min'); 
    % else
-       %Shoe = char(shoelist(cnd));
+       %Shoe = char(shoelist(cnd));  %used this if '_8min' wasn't part of Sock file name
   % end
     
     tmpfilename = tmpFiles(...
@@ -53,30 +59,30 @@ for cnd = 1:length(shoelist)
         contains(string(filelist), Shoe) == 1).name;
     idx = strfind(tmpfilename,'_');
     
-    ID = tmpfilename((idx(end)+1):(end-4));
+    ID = tmpfilename((idx(end)+1):(end-4)); %grabbing Subject ID
     
     
     tmpGRFz = table2array(readtable(strcat(expfolder, '/', tmpfilename)));
-    tmpGRFz = tmpGRFz(1:10:length(tmpGRFz),:);
-    figure(1),plot(tmpGRFz(1:1600,2))
+    tmpGRFz = tmpGRFz(1:10:length(tmpGRFz),:); %reducing number of data points to match motion capture data
+    figure(1),plot(tmpGRFz(1:1600,2)) % plotting enough time to capture at least 10 steps
     figure(1), hold on
     title(tmpfilename)
     
         
-   
-    tmpstart = round(ginput(1))
+   %click portion of time series before the first full GRFz peak NOT first step by right leg - that is handled by the input from earlier
+    tmpstart = round(ginput(1)) 
     if tmpstart(1) < 1
         tmpstart(1) = 1
     end
     %if strcmp(Shoe, 'Sock') == 1 && strcmp(ID, 'S01') ==1
-        nonzeroGRFidx = tmpGRFz(tmpstart(1):(tmpstart(1)+1600),2) > 0.075;
+        nonzeroGRFidx = tmpGRFz(tmpstart(1):(tmpstart(1)+1600),2) > 0.075; % using a GRFz detection threshold to find when a GRFz peak occurs
    % else
     %nonzeroGRFidx = tmpGRFz(tmpstart(1):(tmpstart(1)+1600),2) > 0
    % end
     transitions = diff(nonzeroGRFidx) == 1;
     transitions2 = (diff(nonzeroGRFidx) == -1);
-    FS = (find(transitions == 1)+tmpstart(1));
-    TO = (find(transitions2 == 1)+tmpstart(1));
+    FS = (find(transitions == 1)+tmpstart(1));  %finding heel strike indices of all GRFz peaks
+    TO = (find(transitions2 == 1)+tmpstart(1));  %finding toe off indices of all GRFz peaks
     % stance = FS(1) - (TO(1)-1)
     
     
@@ -85,6 +91,8 @@ for cnd = 1:length(shoelist)
     %pts = ginput(21);
     
     startpeak = first_step_peak(cnd);
+    
+    % the peak of the first step determines how the FS and TO indices are accessed
     if startpeak == 1
         
         for stepnum = 1:10
@@ -125,6 +133,7 @@ for cnd = 1:length(shoelist)
     close(figure(1))
     
 end
+
 %% Section 1B - Use time indices to plot angles over 10 stance phases for 
 % each parameter for each shoe, as well as squats - also time normalizes 
 % data (one subject at time - continuation from above)
@@ -159,9 +168,9 @@ for i = 1:length(tmpFiles)
         continue                %this keeps it from failing
     else
         
-        %special condition if squat trial because squats need to be parsed
-        %out of the data to get an ensemble curve
-        if strcmp(Shoe, 'Squat_Trial') == 1
+        %special condition for squat trial because individual squats are parsed using
+        %external function from above
+        if strcmp(Shoe, 'Squat_Trial') == 1  %treating the squat trial as a shoe condition for naming convention
             
             num_trials = (length(Pidx)-1);
             normTrials = zeros(100,10);
@@ -169,6 +178,7 @@ for i = 1:length(tmpFiles)
             for sq = 1:num_trials
                 Squat = strcat(Shoe, num2str(sq));
                 
+                %plotting raw data
                 tmpTrial  = (...
                     tmpT((Pidx(sq)):(Pidx(sq+1)),:));
                 Study4Data.(ID).(Shoe).(Var).RawData.(Squat) = tmpTrial(:,2);
@@ -177,6 +187,7 @@ for i = 1:length(tmpFiles)
                 title(strcat(ID, ' - ', Shoe, ' - ', Var, ' - Raw'))
                 hold on
                 
+                %plotting time-normalized data
                 normTrials(:,sq) = spline(...
                     tmpTrial(:,1), tmpTrial(:,2), linspace(tmpTrial(1,1), tmpTrial(end,1)));
                 figure(600+i), plot(normTrials(:,sq))
@@ -185,6 +196,7 @@ for i = 1:length(tmpFiles)
                 
             end
             
+            %adding legend labels to squat trial plots then saving them
             figure(500+i), legend(legendLabels)
             saveas(figure(500+i), strcat(rawdataplotfolder, '\', ID, '_', Shoe, '_', Var, ' _Raw'), 'png');
             close(figure(500+i))
@@ -196,6 +208,9 @@ for i = 1:length(tmpFiles)
             Study4Data.(ID).(Shoe).(Var).NormData = normTrials;
        % elseif strcmp(ID, 'S12') == 1 && strcmp(Var, 'GRFz') == 1 
         %    continue
+        
+        %using step indices from above to parse out joint angles for each step
+        %then plotting raw data and time-normalized data for each
         else
             normTrials = zeros(100,10);
             for stepnum = 1:length(fieldnames(stepIdx.(ID).(Shoe)))
@@ -225,6 +240,8 @@ for i = 1:length(tmpFiles)
                 
                 
             end
+            
+            %adding legend labels to joint angle plots then saving them
             figure(100+i), legend(legendLabels)
             saveas(figure(100+i), strcat(rawdataplotfolder, '\', ID, '_', Shoe, '_', Var, ' _Raw'), 'png');
             close(figure(100+i))
@@ -241,21 +258,7 @@ end
 
  save('AnalyzedDataFile.mat', 'Study4Data', 'DataTable', 'stepIdx')
  
- %%%old code
-%  elseif strcmp(Var, 'GRFz') == 1
-% 
-%             if strcmp(Shoe, 'G8min') & strcmp(ID, 'S05') == 1
-%                 %%1st column is index, 2nd has data, 11 has NaNs to skip
-%                 Study4Data.(ID).(Shoe).(Var).Data = tmpT(:,[2:10,12]);
-%             else
-%                 %1st column is index, 2nd has data
-%                 Study4Data.(ID).(Shoe).(Var).Data = tmpT(:,2:11);
-%             end
-%         else
-%             %1st column is index, 2 and 3 are mean & SD
-%             Study4Data.(ID).(Shoe).(Var).Data = tmpT(:,4:13);
-%         end
- 
+
 %% Section 2: Caclulate ensemble curves for each parameter for each shoe for each 
 %subject (can do multiple subjects at one time)
 ShoeMeans = struct;
