@@ -270,7 +270,7 @@ ShoeMeans = struct;
      ID = char(ids(i));
      shoes = fieldnames(Study4Data.(ID));
      
-     Group = 'All';
+     Group = 'All'; %if separating subjects based on group, add code here to do so
      count = count + 1;
 
      for s = 1:length(shoes)
@@ -282,6 +282,7 @@ ShoeMeans = struct;
              
              Var = char(vars(v));
 
+             % creating an ensemble curve for each variable
              for d = 1:length(Study4Data.(ID).(Shoe).(Var).NormData)
                  
                       Study4Data.(ID).(Shoe).(Var).Mean(d,1) = mean(...
@@ -289,6 +290,8 @@ ShoeMeans = struct;
                 
              end
              
+             % if separating subjects into groups, the following 'if-else' 
+             % creates an ensemble curve for each group for the 3 specified variables
              if strcmp(Var, 'GRFz') == 1
                  
               ShoeMeans.(Group).(Var).(Shoe)(:,count) = Study4Data.(ID).(Shoe).(Var).Mean;
@@ -314,7 +317,7 @@ ShoeMeans = struct;
      'PeakAnkFlex', 'AnkFlexROM', 'PeakAnkEv', 'AnkEvROM', 'PeakAnkAdd', 'AnkAddROM',...
      'InclinationAngle', 'MaxEvVel'}) 
 
-T = plot4lvlstruct(Study4Data);
+T = plot4lvlstruct(Study4Data); %external function to plot & save each ensemble curve for each shoe for each subject
 if isfile('AnalyzedDataFile.mat') == 1
     DataTable = vertcat(DataTable, T);
 else
@@ -352,6 +355,7 @@ end
         % x2 = ismember(T.ShoeCnd, cellstr(Shoe));
          t_idx = ismember(T.Subj_ID, cellstr(ID)) == 1 & ismember(T.ShoeCnd, cellstr(Shoe));
          
+         %Squat trial won't have information for the following
          if strcmp(Shoe, 'Squat_Trial') == 1
              T.ImpactPeak(t_idx) = 0;
              T.VALR(t_idx) = 0;
@@ -362,6 +366,11 @@ end
              
          else
              
+             %plotting ensemble GRFz for each shoe condition
+             %if impact peak exists, then click in the 'valley' after impact peak
+             %which allows code to find value of impact peak by finding the max between FS and click
+             %if no discernible impact peak exists, just hit 'Enter' and impact peak will be designated
+             %as 20% of GRFz peak
              figure(100-i), plot(Study4Data.(ID).(Shoe).GRFz.Mean), ...
                  title(strcat(ID, ' - ', Shoe))
              pk_idx = ginput(1);
@@ -380,6 +389,11 @@ end
              %find max knee angle in run (critical knee angle)
              [crit_knee_run, run_idx] = min(Study4Data.(ID).(Shoe).KneeFlexion.Mean);
              
+             
+             %creating a figure with subplots where each row is a variable 
+             % (knee flexion, tibial rotation, knee add/abd, and ankle eversion)
+             % and each column is a condition (shoe condition + squat)
+             % each subplot is an ensemble curve with the time index highlighted on the curve
              figure(i), subplot(4,shoenum,(j+1)), plot(Study4Data.(ID).(Shoe).KneeFlexion.Mean, 'k')
              title(Shoe)
              hold on
@@ -404,8 +418,8 @@ end
              hold on
              figure(i), subplot(4,shoenum,1), scatter(squat_idx, crit_knee_squat, mk_prop)
              
-             %find angles (tib rot, eversion, knee abd/add) at time point of crit
-             %knee angle in run
+             %find angles (tib rot, eversion, knee abd/add) at time point of
+             %critical knee angle in run
              
              crit_ev_run = Study4TunedData.(ID).(Shoe).AnkleEversion.Mean(run_idx);
              figure(i), subplot(4,shoenum,shoenum+(j+1)), plot(Study4Data.(ID).(Shoe).AnkleEversion.Mean, 'k')
