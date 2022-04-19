@@ -1,5 +1,5 @@
 function [T] = plot4lvlstruct(LoftV4)
-%UNTITLED3 Summary of this function goes here
+%Function to loop through data structure, plot ensemble curves for each joint angle for each shoe, and save plots
 %   Detailed explanation goes here
 T=table();
 count = 0;
@@ -74,8 +74,3 @@ for i = 1:length(ids)
     end
 end
 
-%%%steps to get impact team
-
-%1. plot GRFz of shoe condition
-
-%2. select point that looks like impact
